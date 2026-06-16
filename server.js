@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 
 // Live status check: if ANTHROPIC_API_KEY is set, ping the model on a schedule.
 const FABLE_MODEL = process.env.FABLE_MODEL || 'claude-fable-5';
-const CHECK_INTERVAL_MS = (Math.max(0.1, Number(process.env.CHECK_INTERVAL_HOURS) || 6)) * 3600 * 1000;
+const CHECK_INTERVAL_MS = (Math.max(0.1, Number(process.env.CHECK_INTERVAL_HOURS) || 0.5)) * 3600 * 1000;
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 // In production, point DATA_DIR at a mounted persistent disk (e.g. /data) so the

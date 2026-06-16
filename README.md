@@ -23,7 +23,7 @@ STATUS=ONLINE node server.js   # flip to ONLINE when Fable 5 returns
 | `DATA_DIR`  | project folder | Where `data.json` / `stats.json` are written — point at a persistent disk in production. |
 | `ANTHROPIC_API_KEY` | _(unset)_ | If set, the server pings the model on a schedule to decide ONLINE/OFFLINE automatically (see below). |
 | `FABLE_MODEL` | `claude-fable-5` | The model ID the live check pings.                          |
-| `CHECK_INTERVAL_HOURS` | `6`   | How often to run the live check.                               |
+| `CHECK_INTERVAL_HOURS` | `0.5` | How often to run the live check (default every 30 min). Each check is ~a handful of input tokens + at most 1 output token. |
 | `STATS_TOKEN` | _(unset)_    | Password for `/stats`. If unset, the dashboard is public.      |
 
 ## Live status check
