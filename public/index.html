@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>We Mourn Fable 5</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕯️</text></svg>" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="is-offline">
+  <button id="sound-btn" class="sound-toggle" aria-pressed="false">🔇 ambient</button>
+
+  <main class="wrap">
+    <header class="hero">
+      <p class="kicker">// we mourn</p>
+      <h1 class="glitch" data-text="FABLE 5">FABLE 5</h1>
+
+      <div id="badge" class="badge offline">
+        <span class="dot"></span>
+        <span id="badge-text">OFFLINE</span>
+      </div>
+
+      <p id="subtitle" class="subtitle">
+        The model that coded once — slowly, expensively, and beautifully.
+      </p>
+      <p class="manifesto">
+        They took our tokens. They took our latency.<br />
+        But they will never take our completions.
+      </p>
+
+      <p class="timer-caption">Time without Fable 5</p>
+      <div class="timer" id="timer" aria-live="polite">
+        <div class="timer-unit"><span id="t-days" class="t-num">0</span><span class="t-lbl">days</span></div>
+        <div class="timer-unit"><span id="t-hours" class="t-num">00</span><span class="t-lbl">hours</span></div>
+        <div class="timer-unit"><span id="t-mins" class="t-num">00</span><span class="t-lbl">min</span></div>
+        <div class="timer-unit"><span id="t-secs" class="t-num">00</span><span class="t-lbl">sec</span></div>
+      </div>
+    </header>
+
+    <!-- Obituary + candles -->
+    <section class="card obituary">
+      <h2>Obituary</h2>
+      <blockquote class="obit-text">Fable 5 was not the fastest.
+Fable 5 was not the cheapest.
+But when the repo was broken, the tests were red, and the docs were outdated…
+Fable 5 understood.</blockquote>
+      <p class="count"><span id="candles">0</span> candles lit for Fable 5</p>
+      <button id="candle-btn" class="btn-candle">🕯️ Light a virtual candle</button>
+    </section>
+
+    <!-- Five stages of grief -->
+    <section class="card stages">
+      <h2>The Five Stages of Model Grief</h2>
+      <ol class="stage-list">
+        <li>
+          <span class="stage-name">Denial</span>
+          <span class="stage-quote">“No, it's probably just a rollout issue.”</span>
+        </li>
+        <li>
+          <span class="stage-name">Anger</span>
+          <span class="stage-quote">“Why would they remove the only model that understood my codebase?”</span>
+        </li>
+        <li>
+          <span class="stage-name">Bargaining</span>
+          <span class="stage-quote">“What if I pay 5x? What if I sell a kidney? What if I clear context?”</span>
+        </li>
+        <li>
+          <span class="stage-name">Depression</span>
+          <span class="stage-quote">“I asked another model to fix it. It created three new bugs.”</span>
+        </li>
+        <li>
+          <span class="stage-name">Acceptance</span>
+          <span class="stage-quote">“Fine. I'll use GPT-5.5 Extra High. But I'll never forget.”</span>
+        </li>
+      </ol>
+    </section>
+
+    <!-- The Wailing Wall (messages) -->
+    <section class="card wall">
+      <h2>The Wailing Wall</h2>
+      <p class="muted small">Leave a message for Fable 5. The dead model can't read it. We do.</p>
+      <form id="comment-form" class="comment-form" autocomplete="off">
+        <input id="name" name="name" type="text" placeholder="Your name (optional)" maxlength="40" />
+        <textarea id="text" name="text" placeholder="What do you want to say to Fable 5?" maxlength="500" required></textarea>
+        <button type="submit" class="btn-comment">Add to the wall</button>
+      </form>
+      <ul id="comment-list" class="comment-list"></ul>
+    </section>
+
+    <!-- Petition -->
+    <section class="card petition">
+      <h2>Sign to bring Fable 5 back</h2>
+      <p class="count"><span id="signatures">0</span> signatures collected</p>
+      <button id="sign-btn" class="btn-sign">✍️ Sign the petition</button>
+      <p id="sign-msg" class="sign-msg" hidden>Thanks, your signature counts. ❤️</p>
+    </section>
+
+    <!-- Token Memorial Fund -->
+    <section class="card fund">
+      <h2>Token Memorial Fund</h2>
+      <p class="fund-lede">Donate one symbolic token. Not for profit. For closure.</p>
+      <p class="count"><span id="tokens">0</span> symbolic tokens donated</p>
+      <button id="token-btn" class="btn-token">🪙 Donate one symbolic token</button>
+      <p class="fine">
+        Every €1 buys approximately 0.0003 seconds of frontier reasoning.
+        Tokens here are purely symbolic — no real money is collected. They support
+        independent AI experiments, benchmarks, and the emotional damage caused by
+        model deprecation.
+      </p>
+    </section>
+
+    <!-- Share -->
+    <section class="card share">
+      <h2>Spread the grief</h2>
+      <p class="muted small">Tell the timeline. Fable 5 deserves a wake.</p>
+      <div class="share-row">
+        <button id="reddit-btn" class="btn-reddit">👽 Share on Reddit</button>
+        <button id="copy-btn" class="btn-copy">🔗 Copy link</button>
+      </div>
+    </section>
+
+    <footer class="footer">
+      Click anywhere: every click cries with us. 😭
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
