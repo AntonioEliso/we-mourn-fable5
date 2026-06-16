@@ -16,8 +16,13 @@ function spawn(cls, char, x, y, life) {
   setTimeout(() => el.remove(), life);
 }
 
+// Session analytics counters
+let sessionClicks = 0;
+const sessionStart = Date.now();
+
 // Crying faces on every click
 document.addEventListener('click', (e) => {
+  sessionClicks += 1;
   spawn('tear', FACES[Math.floor(Math.random() * FACES.length)], e.clientX, e.clientY, 1600);
 });
 
@@ -281,6 +286,42 @@ async function copyLink() {
   }
   setTimeout(() => { btn.textContent = original; }, 2000);
 }
+
+// --- Analytics (anonymous, privacy-friendly) -------------------------------
+
+const VISITOR_KEY = 'fable5_visitor';
+
+function visitorId() {
+  let id = localStorage.getItem(VISITOR_KEY);
+  if (!id) {
+    id = (crypto.randomUUID && crypto.randomUUID()) || Date.now() + '.' + Math.random().toString(16).slice(2);
+    localStorage.setItem(VISITOR_KEY, id);
+  }
+  return id;
+}
+
+fetch('/api/track', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ type: 'visit', visitorId: visitorId(), referrer: document.referrer }),
+}).catch(() => {});
+
+let visitEnded = false;
+function trackEnd() {
+  if (visitEnded) return;
+  visitEnded = true;
+  const payload = JSON.stringify({ type: 'end', duration: Date.now() - sessionStart, clicks: sessionClicks });
+  try {
+    navigator.sendBeacon('/api/track', new Blob([payload], { type: 'application/json' }));
+  } catch {
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {});
+  }
+}
+
+window.addEventListener('pagehide', trackEnd);
+window.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') trackEnd();
+});
 
 // --- Initial load ----------------------------------------------------------
 

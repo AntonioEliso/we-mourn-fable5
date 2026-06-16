@@ -56,6 +56,55 @@ function readData() {
 let data = readData();
 if (!fs.existsSync(DATA_FILE)) saveData(data); // persist the seed
 
+// --- Analytics (privacy-friendly: no IPs, anonymous random client id) -------
+
+const STATS_FILE = path.join(DATA_DIR, 'stats.json');
+const STATS_TOKEN = process.env.STATS_TOKEN || ''; // set this to password-protect /stats
+
+function defaultStats() {
+  return { visits: 0, clicks: 0, durationSum: 0, durationCount: 0, visitorIds: {}, referrers: {}, daily: {} };
+}
+
+function readStats() {
+  try {
+    return Object.assign(defaultStats(), JSON.parse(fs.readFileSync(STATS_FILE, 'utf8')));
+  } catch {
+    return defaultStats();
+  }
+}
+
+function saveStats() {
+  const tmp = STATS_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(stats));
+  fs.renameSync(tmp, STATS_FILE);
+}
+
+let stats = readStats();
+
+function referrerHost(ref) {
+  if (!ref) return 'direct';
+  try {
+    return new URL(ref).hostname.replace(/^www\./, '') || 'direct';
+  } catch {
+    return 'direct';
+  }
+}
+
+function statsSummary() {
+  return {
+    visits: stats.visits,
+    uniqueVisitors: Object.keys(stats.visitorIds).length,
+    clicks: stats.clicks,
+    avgVisitSeconds: stats.durationCount ? Math.round(stats.durationSum / stats.durationCount / 1000) : 0,
+    referrers: Object.entries(stats.referrers).sort((a, b) => b[1] - a[1]).slice(0, 15),
+    daily: Object.entries(stats.daily).sort().slice(-30),
+    signatures: data.signatures,
+    candles: data.candles,
+    tokens: data.tokens,
+    comments: data.comments.length,
+  };
+}
+
 // --- HTTP helpers -----------------------------------------------------------
 
 function sendJSON(res, code, payload) {
@@ -140,6 +189,49 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && url.pathname === '/api/sign') return bump(res, 'signatures');
   if (req.method === 'POST' && url.pathname === '/api/candle') return bump(res, 'candles');
   if (req.method === 'POST' && url.pathname === '/api/token') return bump(res, 'tokens');
+
+  // POST /api/track  -> record a visit or an end-of-visit event
+  if (req.method === 'POST' && url.pathname === '/api/track') {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch {
+      return sendJSON(res, 400, { error: 'Invalid request' });
+    }
+    if (body.type === 'visit') {
+      stats.visits += 1;
+      const id = String(body.visitorId || '').slice(0, 64);
+      if (id) stats.visitorIds[id] = 1;
+      const host = referrerHost(body.referrer);
+      stats.referrers[host] = (stats.referrers[host] || 0) + 1;
+      const day = new Date().toISOString().slice(0, 10);
+      stats.daily[day] = (stats.daily[day] || 0) + 1;
+      saveStats();
+    } else if (body.type === 'end') {
+      const d = Number(body.duration) || 0;
+      if (d > 0 && d < 6 * 3600 * 1000) {
+        stats.durationSum += d;
+        stats.durationCount += 1;
+      }
+      const c = Number(body.clicks) || 0;
+      if (c > 0) stats.clicks += c;
+      saveStats();
+    }
+    return sendJSON(res, 200, { ok: true });
+  }
+
+  // GET /api/stats  -> aggregated analytics (password-protected if STATS_TOKEN is set)
+  if (req.method === 'GET' && url.pathname === '/api/stats') {
+    if (STATS_TOKEN && url.searchParams.get('key') !== STATS_TOKEN) {
+      return sendJSON(res, 401, { error: 'unauthorized' });
+    }
+    return sendJSON(res, 200, statsSummary());
+  }
+
+  // GET /stats  -> the dashboard page
+  if (req.method === 'GET' && url.pathname === '/stats') {
+    return serveStatic(res, '/stats.html');
+  }
 
   // POST /api/comment  -> add a message to the wall
   if (req.method === 'POST' && url.pathname === '/api/comment') {

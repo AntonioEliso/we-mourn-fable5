@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fable 5 — Stats</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+      margin: 18px 0 36px;
+    }
+    .stat {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .stat .n {
+      font-family: var(--mono);
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--term);
+      line-height: 1.1;
+    }
+    .stat .l {
+      margin-top: 6px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+    .bars { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .bars li { display: grid; grid-template-columns: 140px 1fr 48px; align-items: center; gap: 10px; font-family: var(--mono); font-size: 0.85rem; }
+    .bars .bar { height: 10px; background: var(--accent); border-radius: 5px; min-width: 2px; }
+    .bars .v { text-align: right; color: var(--muted); }
+    .err { font-family: var(--mono); color: var(--offline); }
+    .back { font-family: var(--mono); color: var(--term); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <p class="kicker">// stats</p>
+    <h1 style="font-size:2rem;margin:8px 0 4px;">Fable 5 dashboard</h1>
+    <p class="muted small"><a class="back" href="/">&larr; back to the memorial</a></p>
+
+    <div id="content">
+      <p class="muted" style="margin-top:24px;">Loading…</p>
+    </div>
+  </main>
+
+  <script>
+    const key = new URLSearchParams(location.search).get('key');
+    const url = '/api/stats' + (key ? '?key=' + encodeURIComponent(key) : '');
+
+    const num = (n) => Number(n).toLocaleString('en-US');
+    const dur = (s) => {
+      const m = Math.floor(s / 60), sec = s % 60;
+      return m > 0 ? m + 'm ' + sec + 's' : sec + 's';
+    };
+
+    function stat(n, l) {
+      return '<div class="stat"><div class="n">' + n + '</div><div class="l">' + l + '</div></div>';
+    }
+
+    function bars(entries, label) {
+      if (!entries.length) return '';
+      const max = Math.max(...entries.map((e) => e[1]));
+      const rows = entries.map((e) => {
+        const w = Math.max(2, Math.round((e[1] / max) * 100));
+        const name = String(e[0]).replace(/[<>&]/g, '');
+        return '<li><span>' + name + '</span><span class="bar" style="width:' + w + '%"></span><span class="v">' + num(e[1]) + '</span></li>';
+      }).join('');
+      return '<h2>// ' + label + '</h2><ul class="bars">' + rows + '</ul>';
+    }
+
+    fetch(url)
+      .then((r) => {
+        if (r.status === 401) throw new Error('unauthorized');
+        return r.json();
+      })
+      .then((d) => {
+        document.getElementById('content').innerHTML =
+          '<div class="stats-grid">' +
+            stat(num(d.visits), 'visits') +
+            stat(num(d.uniqueVisitors), 'unique visitors') +
+            stat(dur(d.avgVisitSeconds), 'avg visit') +
+            stat(num(d.clicks), 'clicks') +
+          '</div>' +
+          '<div class="stats-grid">' +
+            stat(num(d.candles), 'candles lit') +
+            stat(num(d.signatures), 'signatures') +
+            stat(num(d.tokens), 'symbolic tokens') +
+            stat(num(d.comments), 'comments') +
+          '</div>' +
+          bars(d.referrers, 'where they come from') +
+          '<div style="height:28px"></div>' +
+          bars(d.daily, 'visits per day');
+      })
+      .catch((e) => {
+        const msg = e.message === 'unauthorized'
+          ? 'Unauthorized. Add your key to the URL: <code>/stats?key=YOUR_KEY</code>'
+          : 'Could not load stats.';
+        document.getElementById('content').innerHTML = '<p class="err" style="margin-top:24px;">' + msg + '</p>';
+      });
+  </script>
+</body>
+</html>
