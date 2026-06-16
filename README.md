@@ -19,8 +19,21 @@ STATUS=ONLINE node server.js   # flip to ONLINE when Fable 5 returns
 | Variable    | Default        | Purpose                                                        |
 |-------------|----------------|----------------------------------------------------------------|
 | `PORT`      | `3000`         | Port to listen on (hosting platforms set this automatically).  |
-| `STATUS`    | `OFFLINE`      | `ONLINE` turns the badge green and updates the copy.           |
-| `DATA_DIR`  | project folder | Where `data.json` is written — point this at a persistent disk in production. |
+| `STATUS`    | `OFFLINE`      | Manual status, used **only when `ANTHROPIC_API_KEY` is not set**. `ONLINE` turns the badge green. |
+| `DATA_DIR`  | project folder | Where `data.json` / `stats.json` are written — point at a persistent disk in production. |
+| `ANTHROPIC_API_KEY` | _(unset)_ | If set, the server pings the model on a schedule to decide ONLINE/OFFLINE automatically (see below). |
+| `FABLE_MODEL` | `claude-fable-5` | The model ID the live check pings.                          |
+| `CHECK_INTERVAL_HOURS` | `6`   | How often to run the live check.                               |
+| `STATS_TOKEN` | _(unset)_    | Password for `/stats`. If unset, the dashboard is public.      |
+
+## Live status check
+
+If `ANTHROPIC_API_KEY` is set, the server calls the Messages API for `FABLE_MODEL`
+every `CHECK_INTERVAL_HOURS`. Any successful response (even a refusal) means the
+model is reachable → **ONLINE**; a `404 not_found` means it's gone → **OFFLINE**.
+Auth / rate-limit / network errors leave the last known status unchanged. Without
+a key, the badge simply reflects the manual `STATUS` env var. The front-end
+re-fetches status every 5 minutes, so OFFLINE flips to ONLINE on its own.
 
 ## Deploy to Render with a persistent disk (recommended)
 

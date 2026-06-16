@@ -8,6 +8,10 @@ const path = require('path');
 const STATUS = (process.env.STATUS || 'OFFLINE').toUpperCase() === 'ONLINE' ? 'ONLINE' : 'OFFLINE';
 const PORT = process.env.PORT || 3000;
 
+// Live status check: if ANTHROPIC_API_KEY is set, ping the model on a schedule.
+const FABLE_MODEL = process.env.FABLE_MODEL || 'claude-fable-5';
+const CHECK_INTERVAL_MS = (Math.max(0.1, Number(process.env.CHECK_INTERVAL_HOURS) || 6)) * 3600 * 1000;
+
 const PUBLIC_DIR = path.join(__dirname, 'public');
 // In production, point DATA_DIR at a mounted persistent disk (e.g. /data) so the
 // counters and comments survive restarts and redeploys.
@@ -105,6 +109,49 @@ function statsSummary() {
   };
 }
 
+// --- Live model status check ------------------------------------------------
+// With ANTHROPIC_API_KEY set, ping the Fable 5 model every few hours: any 200
+// response (even a refusal) means the model is reachable -> ONLINE; a 404
+// (model not found) means it's gone -> OFFLINE. Other errors (auth, rate limit,
+// network) leave the last known status untouched. Without a key, status falls
+// back to the manual STATUS env var.
+
+let liveStatus = STATUS;
+let statusCheckedAt = null;
+let anthropicClient = null;
+
+async function pingFable() {
+  if (!process.env.ANTHROPIC_API_KEY) return;
+  try {
+    if (!anthropicClient) {
+      const { default: Anthropic } = await import('@anthropic-ai/sdk');
+      anthropicClient = new Anthropic();
+    }
+    // Fable 5: omit `thinking` and sampling params (they 400). max_tokens: 1 keeps it tiny.
+    await anthropicClient.messages.create({
+      model: FABLE_MODEL,
+      max_tokens: 1,
+      messages: [{ role: 'user', content: 'ping' }],
+    });
+    liveStatus = 'ONLINE';
+    console.log(`[fable-check] ${FABLE_MODEL} is ONLINE`);
+  } catch (err) {
+    if (err && err.status === 404) {
+      liveStatus = 'OFFLINE';
+      console.log(`[fable-check] ${FABLE_MODEL} not found (404) -> OFFLINE`);
+    } else {
+      console.warn(`[fable-check] check failed (${(err && err.status) || 'no status'}): ${(err && err.message) || err}`);
+    }
+  } finally {
+    statusCheckedAt = new Date().toISOString();
+  }
+}
+
+if (process.env.ANTHROPIC_API_KEY) {
+  pingFable();
+  setInterval(pingFable, CHECK_INTERVAL_MS).unref();
+}
+
 // --- HTTP helpers -----------------------------------------------------------
 
 function sendJSON(res, code, payload) {
@@ -178,7 +225,8 @@ const server = http.createServer(async (req, res) => {
   // GET /api/state  -> status, all counters and comments
   if (req.method === 'GET' && url.pathname === '/api/state') {
     return sendJSON(res, 200, {
-      status: STATUS,
+      status: liveStatus,
+      statusCheckedAt,
       signatures: data.signatures,
       candles: data.candles,
       tokens: data.tokens,

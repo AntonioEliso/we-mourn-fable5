@@ -348,3 +348,4 @@ if (localStorage.getItem(SIGNED_KEY)) {
 }
 
 loadState();
+setInterval(loadState, 5 * 60 * 1000); // refresh status + counters so OFFLINE -> ONLINE flips on its own
